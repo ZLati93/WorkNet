@@ -39,7 +39,6 @@ def verify_token(token: str) -> str:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("user_id")
-<<<<<<< HEAD
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail="Token data is invalid",
@@ -105,11 +104,6 @@ def register_user(user_data: UserCreate):
     try:
         user_id = users_service.register_user(user_data.model_dump())
         return {"status": "success", "user_id": user_id}
-=======
-        if not user_id:
-            raise ValueError("Invalid token")
-        return user_id
->>>>>>> c4b94ab (Adaptation UsersService pour XML-RPC)
     except Exception as e:
         raise ValueError("Invalid token") from e
 
