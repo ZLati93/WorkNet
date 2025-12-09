@@ -133,7 +133,7 @@ app.add_middleware(
 # 🗄 DATABASE
 # -----------------------------------------
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/worknet")
+MONGO_URI = os.getenv("MONGO_URI")
 
 try:
     client = MongoClient(MONGO_URI)
