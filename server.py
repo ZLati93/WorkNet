@@ -134,10 +134,10 @@ app.add_middleware(
 # -----------------------------------------
 
 MONGO_URI = os.getenv("MONGO_URI")
-
+DB_NAME=os.getenv("DB_NAME")
 try:
     client = MongoClient(MONGO_URI)
-    db = client.get_database("DB_NAME")
+    db = client.get_database(DB_NAME)
     # Test the connection by pinging the database
     client.admin.command('ping')
     print("Connected to MongoDB Atlas successfully! 🎉")
