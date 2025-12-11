@@ -1,109 +1,188 @@
+# serveur.py
 import os
+import sys
+import traceback
 from datetime import datetime, timedelta
+from typing import Dict, Any
+
 from dotenv import load_dotenv
 from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from jose import jwt
-from typing import Dict, Any
 
-# ---- Load env ----
+# ------------------------ LOAD ENV ------------------------
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "clE_sEcrEte_TROP_FAible_a_changer")
+MONGO_URI = os.getenv("MONGODB_ATLAS_URL")
+DB_NAME = os.getenv("DB_NAME", "WorkNetBD")
+RPC_HOST = os.getenv("RPC_HOST", "0.0.0.0")
+RPC_PORT = int(os.getenv("RPC_PORT", 8000))
+
+SECRET_KEY = os.getenv("SECRET_KEY", "CHANGER_LA_CLE")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# ---- Database ----
-MONGO_URI = os.getenv("MONGO_URI")
+# ------------------------ ERROR LOGGER ---------------------
+def log_error(msg: str):
+    print(f"[ERROR] {msg}")
+    traceback.print_exc()
+
+
+# ------------------------ DATABASE CONNECTION ------------------------
+db = None
+try:
+    if not MONGO_URI:
+        raise ValueError("MONGO_URI non défini dans le fichier .env")
+
+    print("[INFO] Connexion à MongoDB ...")
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    client.admin.command("ping")
+    db = client[DB_NAME]
+    print(f"[SUCCESS] MongoDB connecté: {DB_NAME}")
+
+except Exception as e:
+    log_error(f"Connexion MongoDB impossible : {e}")
+    db = None
+    print("[WARNING] Mode TEST activé (services factices)")
+
+
+# ------------------------ IMPORT SERVICES ------------------------
+services_available = False
 
 try:
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-    db = client.get_database("WorkNetBD")
-    client.admin.command('ping')
-    print("Connected to MongoDB successfully! 🎉")
-except Exception as e:
-    print(f"FATAL: Database connection failed: {e}")
-    raise
+    from services.users_service import UsersServiceRPC as RealUsersService
+    from services.gigs_service import GigsService as RealGigsService
+    from services.ordres_service import OrdersService as RealOrdersService
+    from services.categories_service import CategoriesService as RealCategoriesService
+    from services.reviews_service import ReviewsService as RealReviewsService
+    from services.messages_service import MessagesService as RealMessagesService
+    from services.payments_service import PaymentsService as RealPaymentsService
+    from services.notifications_service import NotificationsService as RealNotificationsService
+    from services.favorites_service import FavoritesService as RealFavoritesService
+    from services.complaints_service import ComplaintsService as RealComplaintsService
 
-# ---- JWT Functions ----
-def create_access_token(data: Dict[str, Any], expires_delta: timedelta | None = None) -> str:
+    services_available = True
+except Exception as e:
+    print("[WARNING] Impossible d'importer les services réels.")
+    log_error(e)
+
+
+# ------------------------ JWT FUNCTIONS ------------------------
+def create_access_token(data: Dict[str, Any], expires_delta=None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 def verify_token(token: str) -> str:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("user_id")
-        if user_id is None:
-            raise ValueError("Invalid token")
-        return user_id
-    except Exception as e:
-        raise ValueError("Invalid token") from e
+        return payload.get("user_id")
+    except Exception:
+        raise ValueError("Invalid token")
 
-# ---- Services ----
-# Minimal UsersService example
-class UsersService:
-    def __init__(self, db):
-        self.collection = db["users"]
 
-    def register_user(self, email, password, full_name):
-        if self.collection.find_one({"email": email}):
-            return {"error": "Email already exists"}
-        user = {"email": email, "password_hash": password, "full_name": full_name}
-        result = self.collection.insert_one(user)
-        return str(result.inserted_id)
+# ------------------------ FALLBACK SERVICE ------------------------
+class TestService:
+    def __init__(self, name):
+        self.name = name
 
-    def authenticate_user(self, email, password):
-        user = self.collection.find_one({"email": email, "password_hash": password})
-        if not user:
-            return None
-        return str(user["_id"])
+    def ping(self):
+        return f"{self.name} service OK (test mode)"
 
-    def get_user(self, user_id):
-        user = self.collection.find_one({"_id": ObjectId(user_id)})
-        if user:
-            user.pop("password_hash", None)
-        return user
 
-users_service = UsersService(db)
-
-# ---- RPC Functions ----
-
-def register(email, password, full_name):
-    return users_service.register_user(email, password, full_name)
-
-def login(email, password):
-    user_id = users_service.authenticate_user(email, password)
-    if not user_id:
-        return {"error": "Invalid credentials"}
-    token = create_access_token({"user_id": user_id})
-    return {"access_token": token, "user_id": user_id}
-
-def get_user_info(token):
+# ------------------------ INITIALISE SERVICES ------------------------
+if services_available and db is not None:
     try:
-        user_id = verify_token(token)
-        user = users_service.get_user(user_id)
-        if not user:
-            return {"error": "User not found"}
-        return user
+        users = RealUsersService(db)
+        gigs = RealGigsService(db)
+        orders = RealOrdersService(db)
+        categories = RealCategoriesService(db)
+        reviews = RealReviewsService(db)
+        messages = RealMessagesService(db)
+        payments = RealPaymentsService(db)
+        notifications = RealNotificationsService(db)
+        favorites = RealFavoritesService(db)
+        complaints = RealComplaintsService(db)
+
+        print("[INFO] Services réels chargés.")
     except Exception as e:
-        return {"error": str(e)}
+        log_error("Erreur d'initialisation des services réels — Passage en mode test")
+        users = TestService("users")
+        gigs = TestService("gigs")
+        orders = TestService("orders")
+        categories = TestService("categories")
+        reviews = TestService("reviews")
+        messages = TestService("messages")
+        payments = TestService("payments")
+        notifications = TestService("notifications")
+        favorites = TestService("favorites")
+        complaints = TestService("complaints")
 
-# ---- XML-RPC Server ----
+else:
+    users = TestService("users")
+    gigs = TestService("gigs")
+    orders = TestService("orders")
+    categories = TestService("categories")
+    reviews = TestService("reviews")
+    messages = TestService("messages")
+    payments = TestService("payments")
+    notifications = TestService("notifications")
+    favorites = TestService("favorites")
+    complaints = TestService("complaints")
 
+
+# ------------------------ XML-RPC SERVER ------------------------
 class RequestHandler(SimpleXMLRPCRequestHandler):
-    rpc_paths = ('/RPC2',)
+    rpc_paths = ("/RPC2",)
 
-server = SimpleXMLRPCServer(("0.0.0.0", 8000), requestHandler=RequestHandler, allow_none=True)
-server.register_introspection_functions()
 
-# Register functions
-server.register_function(register, 'register')
-server.register_function(login, 'login')
-server.register_function(get_user_info, 'get_user_info')
+try:
+    server = SimpleXMLRPCServer(
+        (RPC_HOST, RPC_PORT),
+        requestHandler=RequestHandler,
+        allow_none=True,
+        logRequests=True,
+    )
+    server.register_introspection_functions()
+    print(f"[SUCCESS] Serveur RPC lancé sur {RPC_HOST}:{RPC_PORT}")
+except Exception as e:
+    log_error("Impossible de démarrer le serveur RPC")
+    sys.exit(1)
 
-print("XML-RPC Server running on port 8000...")
-server.serve_forever()
+
+# ------------------------ REGISTER SERVICE METHODS ------------------------
+def register_service(namespace: str, service_obj):
+    for attr in dir(service_obj):
+        if not attr.startswith("_"):
+            fn = getattr(service_obj, attr)
+            if callable(fn):
+                server.register_function(fn, f"{namespace}.{attr}")
+                print(f"[RPC] Méthode enregistrée : {namespace}.{attr}")
+
+
+register_service("users", users)
+register_service("gigs", gigs)
+register_service("orders", orders)
+register_service("categories", categories)
+register_service("reviews", reviews)
+register_service("messages", messages)
+register_service("payments", payments)
+register_service("notifications", notifications)
+register_service("favorites", favorites)
+register_service("complaints", complaints)
+
+
+# ------------------------ START SERVER ------------------------
+print("[START] Serveur RPC prêt. Ctrl+C pour arrêter.")
+
+try:
+    server.serve_forever()
+except KeyboardInterrupt:
+    print("\n[STOP] Serveur arrêté par l'utilisateur.")
+except Exception as e:
+    log_error(f"Erreur serveur: {e}")
+
+
