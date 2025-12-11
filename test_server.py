@@ -6,11 +6,11 @@ rpc = xmlrpc.client.ServerProxy("http://localhost:8000")
 pp = pprint.PrettyPrinter(indent=2)
 
 # -----------------------------
-# 1️⃣ Users : inscription, authentification, mise à jour, activation/désactivation
+# 1️⃣ Users
 # -----------------------------
 print("=== Users ===")
 
-# Inscription : passer chaque argument séparément
+# Inscription
 new_user = rpc.users.register_user(
     "alice123",             # username
     "alice@example.com",    # email
@@ -18,15 +18,14 @@ new_user = rpc.users.register_user(
     "Alice Test"            # full_name
 )
 pp.pprint(new_user)
-
 user_id = new_user.get("user_id")
 
 # Authentification
 auth = rpc.users.authenticate_user("alice@example.com", "password123")
 pp.pprint(auth)
 
-# Mise à jour du profil (mettre à jour les champs requis)
-update = rpc.users.update_user_profile(user_id, "Je suis freelance.")
+# Mise à jour du profil
+update = rpc.users.update_user_profile(user_id, {"bio": "Je suis freelance."})
 pp.pprint(update)
 
 # Activation / désactivation
@@ -38,23 +37,23 @@ rpc.users.add_skill(user_id, "Python")
 rpc.users.remove_skill(user_id, "Python")
 
 # -----------------------------
-# 2️⃣ Gigs : CRUD + publication/pause/recherche/statistiques
+# 2️⃣ Gigs
 # -----------------------------
 print("\n=== Gigs ===")
 
-# Création de gig
-gig = rpc.gigs.create_gig(
-    "Développement Python",          # title
-    "Création de scripts Python",    # description
-    user_id,                         # freelancer_id
-    "64f123456789abcdef012345",      # category_id (exemple)
-    100                              # price
-)
+gig_data = {
+    "title": "Développement Python",
+    "description": "Création de scripts Python",
+    "freelancer_id": user_id,
+    "category_id": "64f123456789abcdef012345",  # exemple
+    "price": 100
+}
+gig = rpc.gigs.create_gig(gig_data)
 pp.pprint(gig)
 gig_id = gig.get("gig_id")
 
 # Mise à jour
-rpc.gigs.update_gig(gig_id, 120)  # prix mis à jour
+rpc.gigs.update_gig(gig_id, {"price": 120})
 
 # Publier / pause
 rpc.gigs.publish_gig(gig_id)
@@ -64,24 +63,25 @@ rpc.gigs.pause_gig(gig_id)
 gigs_found = rpc.gigs.search_gigs("Python")
 pp.pprint(gigs_found)
 
-# Liste par catégorie / freelancer / featured / recent
+# Listes
 pp.pprint(rpc.gigs.list_gigs_by_category("64f123456789abcdef012345"))
 pp.pprint(rpc.gigs.list_gigs_by_freelancer(user_id))
 pp.pprint(rpc.gigs.list_featured_gigs())
 pp.pprint(rpc.gigs.list_recent_gigs())
 
 # -----------------------------
-# 3️⃣ Orders : CRUD commandes
+# 3️⃣ Orders
 # -----------------------------
 print("\n=== Orders ===")
 
-order = rpc.orders.create_order(
-    gig_id,       # gig_id
-    user_id,      # client_id
-    user_id,      # freelancer_id
-    "Commande test", # details
-    120           # price
-)
+order_data = {
+    "gig_id": gig_id,
+    "client_id": user_id,
+    "freelancer_id": user_id,
+    "details": "Commande test",
+    "price": 120
+}
+order = rpc.orders.create_order(order_data)
 pp.pprint(order)
 order_id = order.get("order_id")
 
@@ -91,14 +91,14 @@ rpc.orders.complete_order(order_id)
 rpc.orders.cancel_order(order_id)
 
 # -----------------------------
-# 4️⃣ Categories : CRUD
+# 4️⃣ Categories
 # -----------------------------
 print("\n=== Categories ===")
 
 cat_id = rpc.categories.create_category("Développement", "Catégorie test")
 pp.pprint(cat_id)
 
-rpc.categories.update_category(cat_id, "MAJ description")
+rpc.categories.update_category(cat_id, {"description": "MAJ description"})
 pp.pprint(rpc.categories.get_category(cat_id))
 pp.pprint(rpc.categories.list_categories())
 pp.pprint(rpc.categories.list_active_categories())
@@ -161,9 +161,9 @@ rpc.complaints.delete_complaint(complaint_id)
 # -----------------------------
 print("\n=== Reviews & Payments ===")
 
-# Exemple de review
+# Exemples (à adapter selon ton serveur)
 # review = rpc.reviews.create_review(user_id, "target_id", 5, "Super travail")
-# Exemple de paiement
 # payment = rpc.payments.create_payment(order_id, user_id, 120)
 
 print("✅ Tests RPC terminés.")
+
