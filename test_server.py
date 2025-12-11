@@ -41,14 +41,14 @@ rpc.users.remove_skill(user_id, "Python")
 # -----------------------------
 print("\n=== Gigs ===")
 
-gig_data = {
-    "title": "Développement Python",
-    "description": "Création de scripts Python",
-    "freelancer_id": user_id,
-    "category_id": "64f123456789abcdef012345",  # exemple
-    "price": 100
-}
-gig = rpc.gigs.create_gig(gig_data)
+# Création de gig
+gig = rpc.gigs.create_gig(
+    "Développement Python",          # title
+    "Création de scripts Python",    # description
+    user_id,                         # freelancer_id
+    "64f123456789abcdef012345",      # category_id (exemple)
+    100                              # price
+)
 pp.pprint(gig)
 gig_id = gig.get("gig_id")
 
@@ -74,14 +74,13 @@ pp.pprint(rpc.gigs.list_recent_gigs())
 # -----------------------------
 print("\n=== Orders ===")
 
-order_data = {
-    "gig_id": gig_id,
-    "client_id": user_id,
-    "freelancer_id": user_id,
-    "details": "Commande test",
-    "price": 120
-}
-order = rpc.orders.create_order(order_data)
+order = rpc.orders.create_order(
+    gig_id,         # gig_id
+    user_id,        # client_id
+    user_id,        # freelancer_id
+    "Commande test",# details
+    120             # price
+)
 pp.pprint(order)
 order_id = order.get("order_id")
 
