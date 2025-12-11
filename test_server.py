@@ -12,10 +12,10 @@ print("=== Users ===")
 
 # Inscription : envoyer un seul dictionnaire
 new_user = rpc.users.register_user({
-    "username": "alice123",
-    "email": "alice@example.com",
-    "password": "password123",
-    "full_name": "Alice Test"
+    "alice123",
+    "alice@example.com",
+    "password123",
+    "Alice Test"
 })
 pp.pprint(new_user)
 
@@ -23,8 +23,8 @@ user_id = new_user.get("user_id")
 
 # Authentification
 auth = rpc.users.authenticate_user({
-    "email": "alice@example.com",
-    "password": "password123"
+    "alice@example.com",
+    "password123"
 })
 pp.pprint(auth)
 
