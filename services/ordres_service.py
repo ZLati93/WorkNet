@@ -16,35 +16,40 @@ class OrdersService:
     # UTILITAIRES
     # ---------------------------------------------------------
     def _validate_oid(self, value, field):
+        """Convert value into ObjectId with validation"""
         try:
             return ObjectId(value)
         except (InvalidId, TypeError):
-            raise ValueError(f"ID invalide pour '{field}'")
+            raise ValueError(f"Invalid ObjectId for '{field}'")
 
     def _sanitize(self, order: dict):
         if not order:
             return None
 
-        for k in ["_id", "client_id", "freelancer_id", "gig_id"]:
-            if k in order:
-                order[k] = str(order[k])
+        # Convert top-level ObjectIds
+        for key in ["_id", "client_id", "freelancer_id", "gig_id"]:
+            if key in order:
+                order[key] = str(order[key])
 
-        # Convert nested IDs
+        # Convert timeline / requirements / delivery_files inner IDs
         for field in ["timeline", "requirements", "delivery_files"]:
             if field in order and isinstance(order[field], list):
                 for item in order[field]:
                     if "_id" in item:
                         item["_id"] = str(item["_id"])
+                    if "user_id" in item and isinstance(item["user_id"], ObjectId):
+                        item["user_id"] = str(item["user_id"])
 
         return order
 
-    def _add_timeline(self, order_id: ObjectId, action: str, user_id: str, extra: dict = None):
+    def _add_timeline(self, order_id: ObjectId, action: str, user_id: str = None, extra: dict = None):
+        """Safely append timeline events without breaking logic."""
         try:
             entry = {
                 "_id": ObjectId(),
                 "action": action,
                 "user_id": ObjectId(user_id) if user_id else None,
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.utcnow()
             }
             if extra:
                 entry.update(extra)
@@ -54,7 +59,7 @@ class OrdersService:
                 {"$push": {"timeline": entry}}
             )
         except Exception:
-            pass  # timeline errors shouldn’t crash workflow
+            pass  # timeline must NEVER crash order workflow
 
     # ---------------------------------------------------------
     # CREATE
@@ -63,7 +68,7 @@ class OrdersService:
         try:
             required = ["gig_id", "client_id", "freelancer_id", "price", "quantity"]
             for r in required:
-                if r not in data:
+                if r not in data or not data[r]:
                     return {"success": False, "error": f"Missing field '{r}'"}
 
             gig_id = self._validate_oid(data["gig_id"], "gig_id")
@@ -106,6 +111,7 @@ class OrdersService:
     def update_order(self, order_id: str, fields: dict) -> dict:
         try:
             oid = self._validate_oid(order_id, "order_id")
+
             fields["updated_at"] = datetime.utcnow()
 
             res = self.orders.update_one({"_id": oid}, {"$set": fields})
@@ -137,11 +143,11 @@ class OrdersService:
             return {"success": False, "error": str(e)}
 
     # ---------------------------------------------------------
-    # WORKFLOW LOGIC
+    # WORKFLOW
     # ---------------------------------------------------------
 
-    # Confirm (client)
     def confirm_order(self, order_id: str, client_id: str) -> dict:
+        """Client accepts the order and sends it to the freelancer."""
         try:
             oid = self._validate_oid(order_id, "order_id")
             order = self.orders.find_one({"_id": oid})
@@ -150,10 +156,10 @@ class OrdersService:
                 return {"success": False, "error": "Order not found"}
 
             if order["status"] != "pending":
-                return {"success": False, "error": "Only pending orders can be confirmed"}
+                return {"success": False, "error": "Order must be pending"}
 
             if str(order["client_id"]) != client_id:
-                return {"success": False, "error": "Not allowed"}
+                return {"success": False, "error": "Not authorized"}
 
             self.orders.update_one(
                 {"_id": oid},
@@ -167,8 +173,8 @@ class OrdersService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # Start (freelancer)
     def start_order(self, order_id: str, freelancer_id: str, expected_delivery: str) -> dict:
+        """Freelancer starts the project."""
         try:
             oid = self._validate_oid(order_id, "order_id")
             order = self.orders.find_one({"_id": oid})
@@ -177,9 +183,12 @@ class OrdersService:
                 return {"success": False, "error": "Order must be accepted first"}
 
             if str(order["freelancer_id"]) != freelancer_id:
-                return {"success": False, "error": "Not allowed"}
+                return {"success": False, "error": "Not authorized"}
 
-            exp = datetime.fromisoformat(expected_delivery)
+            try:
+                exp = datetime.fromisoformat(expected_delivery)
+            except:
+                return {"success": False, "error": "Invalid expected_delivery format"}
 
             self.orders.update_one(
                 {"_id": oid},
@@ -198,8 +207,8 @@ class OrdersService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # Deliver (freelancer)
     def deliver_order(self, order_id: str, freelancer_id: str, files: list, message: str = None) -> dict:
+        """Freelancer delivers the work."""
         try:
             oid = self._validate_oid(order_id, "order_id")
             order = self.orders.find_one({"_id": oid})
@@ -208,7 +217,10 @@ class OrdersService:
                 return {"success": False, "error": "Order must be in progress"}
 
             if str(order["freelancer_id"]) != freelancer_id:
-                return {"success": False, "error": "Not allowed"}
+                return {"success": False, "error": "Not authorized"}
+
+            if not files:
+                return {"success": False, "error": "Files required"}
 
             delivered_files = [{
                 "_id": ObjectId(),
@@ -232,8 +244,8 @@ class OrdersService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # Revision (client)
     def request_revision(self, order_id: str, client_id: str, reason: str) -> dict:
+        """Client requests revisions."""
         try:
             if not reason:
                 return {"success": False, "error": "Reason required"}
@@ -245,7 +257,7 @@ class OrdersService:
                 return {"success": False, "error": "Order must be delivered"}
 
             if str(order["client_id"]) != client_id:
-                return {"success": False, "error": "Not allowed"}
+                return {"success": False, "error": "Not authorized"}
 
             self.orders.update_one(
                 {"_id": oid},
@@ -259,17 +271,17 @@ class OrdersService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # Accept delivery (client)
     def accept_delivery(self, order_id: str, client_id: str) -> dict:
+        """Client accepts delivery (before completion)."""
         try:
             oid = self._validate_oid(order_id, "order_id")
             order = self.orders.find_one({"_id": oid})
 
             if not order or order["status"] not in ["delivered", "revision_delivered"]:
-                return {"success": False, "error": "Order not delivered"}
+                return {"success": False, "error": "Order is not delivered"}
 
             if str(order["client_id"]) != client_id:
-                return {"success": False, "error": "Not allowed"}
+                return {"success": False, "error": "Not authorized"}
 
             self._add_timeline(oid, "delivery_accepted", client_id)
 
@@ -278,26 +290,28 @@ class OrdersService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # Complete
     def complete_order(self, order_id: str, client_id: str) -> dict:
+        """Client completes the order and releases payment."""
         try:
             oid = self._validate_oid(order_id, "order_id")
             order = self.orders.find_one({"_id": oid})
 
             if not order or order["status"] != "delivered":
-                return {"success": False, "error": "Order must be delivered"}
+                return {"success": False, "error": "Order must be delivered first"}
 
             if str(order["client_id"]) != client_id:
-                return {"success": False, "error": "Not allowed"}
+                return {"success": False, "error": "Not authorized"}
 
             now = datetime.utcnow()
             amount = order["price"] * order["quantity"]
 
+            # Update order status
             self.orders.update_one(
                 {"_id": oid},
                 {"$set": {"status": "completed", "completed_at": now, "updated_at": now}}
             )
 
+            # Add payment
             self.payments.insert_one({
                 "_id": ObjectId(),
                 "order_id": oid,
@@ -310,6 +324,7 @@ class OrdersService:
                 "updated_at": now
             })
 
+            # Update gig statistics
             self.gigs.update_one(
                 {"_id": order["gig_id"]},
                 {"$inc": {"total_orders": 1, "total_earning": amount}}
@@ -322,8 +337,8 @@ class OrdersService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    # Dispute
     def dispute_order(self, order_id: str, user_id: str, message: str) -> dict:
+        """User disputes the order."""
         try:
             if not message:
                 return {"success": False, "error": "Message required"}
@@ -380,9 +395,10 @@ class OrdersService:
             return {"success": False, "error": str(e)}
 
     # ---------------------------------------------------------
-    # CANCEL
+    # CANCEL ORDER
     # ---------------------------------------------------------
     def cancel_order(self, order_id: str, user_id: str, reason: str = None) -> dict:
+        """Cancel order with full logic for client and freelancer."""
         try:
             oid = self._validate_oid(order_id, "order_id")
             order = self.orders.find_one({"_id": oid})
@@ -393,11 +409,11 @@ class OrdersService:
             if order["status"] in ["completed", "cancelled"]:
                 return {"success": False, "error": "Order cannot be cancelled"}
 
-            # client rules
+            # Client cancellations allowed only before freelancer starts
             if order["status"] in ["pending", "accepted"] and str(order["client_id"]) != user_id:
                 return {"success": False, "error": "Only client can cancel"}
 
-            # freelancer rules
+            # Freelancer cancellations allowed only if in progress
             if order["status"] == "in_progress" and str(order["freelancer_id"]) != user_id:
                 return {"success": False, "error": "Only freelancer can cancel"}
 
