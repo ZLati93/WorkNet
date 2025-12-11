@@ -2,10 +2,16 @@ from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from pymongo.errors import PyMongoError
 from typing import Optional, List, Dict
-import jwt
 
-from utils.security import hash_password, verify_password, SECRET_KEY, ALGORITHM
+# IMPORTANT : python-jose (et non PyJWT)
+from jose import jwt
 
+from utils.security import (
+    hash_password,
+    verify_password,
+    SECRET_KEY,
+    ALGORITHM,
+)
 
 class UsersServiceRPC:
     def __init__(self, db):
@@ -30,10 +36,11 @@ class UsersServiceRPC:
             user["updated_at"] = user["updated_at"].isoformat()
         return user
 
-    # ------------------------- AUTHENTICATION -------------------------
+    # ------------------------- AUTH -------------------------
     def register_user(self, email: str, password: str, full_name: str) -> dict:
         try:
             email = email.lower().strip()
+
             if self.collection.find_one({"email": email}):
                 return {"error": "Email already exists"}
 
@@ -53,12 +60,18 @@ class UsersServiceRPC:
                 "hourly_rate": None,
                 "is_active": True,
                 "is_verified": False,
-                "stats": {"rating": 0, "completed_orders": 0, "total_reviews": 0},
+                "stats": {
+                    "rating": 0,
+                    "completed_orders": 0,
+                    "total_reviews": 0,
+                },
                 "created_at": now,
-                "updated_at": now
+                "updated_at": now,
             }
+
             result = self.collection.insert_one(user_doc)
             return {"user_id": str(result.inserted_id)}
+
         except PyMongoError as e:
             return {"error": f"Database error: {str(e)}"}
 
@@ -66,9 +79,12 @@ class UsersServiceRPC:
         try:
             email = email.lower().strip()
             user = self.collection.find_one({"email": email})
+
             if not user or not verify_password(password, user.get("password_hash", "")):
                 return {"error": "Invalid credentials"}
+
             return self._sanitize(user)
+
         except PyMongoError as e:
             return {"error": f"Database error: {str(e)}"}
 
@@ -85,7 +101,10 @@ class UsersServiceRPC:
         try:
             oid = self._to_objectid(user_id, "user_id")
             fields["updated_at"] = datetime.utcnow()
-            res = self.collection.update_one({"_id": oid}, {"$set": fields})
+
+            res = self.collection.update_one(
+                {"_id": oid}, {"$set": fields}
+            )
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
@@ -94,11 +113,18 @@ class UsersServiceRPC:
         try:
             oid = self._to_objectid(user_id, "user_id")
             user = self.collection.find_one({"_id": oid})
+
             if not user or not verify_password(old_password, user.get("password_hash", "")):
                 return {"error": "Old password incorrect"}
+
             new_hash = hash_password(new_password)
-            res = self.collection.update_one({"_id": oid}, {"$set": {"password_hash": new_hash}})
+
+            res = self.collection.update_one(
+                {"_id": oid}, {"$set": {"password_hash": new_hash}}
+            )
+
             return {"success": res.modified_count > 0}
+
         except Exception as e:
             return {"error": str(e)}
 
@@ -106,7 +132,9 @@ class UsersServiceRPC:
     def deactivate_account(self, user_id: str) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
-            res = self.collection.update_one({"_id": oid}, {"$set": {"is_active": False}})
+            res = self.collection.update_one(
+                {"_id": oid}, {"$set": {"is_active": False}}
+            )
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
@@ -114,7 +142,9 @@ class UsersServiceRPC:
     def activate_account(self, user_id: str) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
-            res = self.collection.update_one({"_id": oid}, {"$set": {"is_active": True}})
+            res = self.collection.update_one(
+                {"_id": oid}, {"$set": {"is_active": True}}
+            )
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
@@ -123,7 +153,9 @@ class UsersServiceRPC:
     def add_skill(self, user_id: str, skill: str) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
-            res = self.collection.update_one({"_id": oid}, {"$addToSet": {"skills": skill}})
+            res = self.collection.update_one(
+                {"_id": oid}, {"$addToSet": {"skills": skill}}
+            )
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
@@ -131,7 +163,9 @@ class UsersServiceRPC:
     def remove_skill(self, user_id: str, skill: str) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
-            res = self.collection.update_one({"_id": oid}, {"$pull": {"skills": skill}})
+            res = self.collection.update_one(
+                {"_id": oid}, {"$pull": {"skills": skill}}
+            )
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
@@ -139,7 +173,9 @@ class UsersServiceRPC:
     def update_skills(self, user_id: str, skills_list: List[str]) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
-            res = self.collection.update_one({"_id": oid}, {"$set": {"skills": skills_list}})
+            res = self.collection.update_one(
+                {"_id": oid}, {"$set": {"skills": skills_list}}
+            )
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
@@ -147,7 +183,9 @@ class UsersServiceRPC:
     def update_hourly_rate(self, user_id: str, rate: float) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
-            res = self.collection.update_one({"_id": oid}, {"$set": {"hourly_rate": rate}})
+            res = self.collection.update_one(
+                {"_id": oid}, {"$set": {"hourly_rate": rate}}
+            )
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
