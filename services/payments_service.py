@@ -13,25 +13,24 @@ class PaymentsService:
     # 🔧 Utility : Safe ObjectId
     # ---------------------------------------------------------
     def _safe_oid(self, oid: str):
+        """Convert string → ObjectId with error handling."""
         try:
             return ObjectId(oid)
         except Exception:
             raise ValueError(f"Invalid ObjectId: {oid}")
 
     # ---------------------------------------------------------
-    # 🔧 Utility : Sanitize Mongo object
+    # 🔧 Utility : Sanitize MongoDB document
     # ---------------------------------------------------------
     def _sanitize(self, payment: dict) -> dict:
         if not payment:
             return None
 
-        try:
-            payment["_id"] = str(payment["_id"])
-            payment["order_id"] = str(payment["order_id"])
-            payment["client_id"] = str(payment["client_id"])
-            return payment
-        except KeyError:
-            raise ValueError("Payment document is missing required fields")
+        sanitized = payment.copy()
+        sanitized["_id"] = str(payment["_id"])
+        sanitized["order_id"] = str(payment["order_id"])
+        sanitized["client_id"] = str(payment["client_id"])
+        return sanitized
 
     # ---------------------------------------------------------
     # 💳 Create Payment
@@ -40,16 +39,18 @@ class PaymentsService:
         required = ["order_id", "client_id", "amount", "payment_method"]
 
         for r in required:
-            if r not in payment_data:
-                raise ValueError(f"Missing required field: {r}")
-            if not payment_data[r]:
-                raise ValueError(f"Field cannot be empty: {r}")
+            if r not in payment_data or not payment_data[r]:
+                raise ValueError(f"Missing or empty required field: {r}")
 
         try:
+            amount = float(payment_data["amount"])
+            if amount <= 0:
+                raise ValueError("Amount must be a positive number")
+
             payment = {
                 "order_id": self._safe_oid(payment_data["order_id"]),
                 "client_id": self._safe_oid(payment_data["client_id"]),
-                "amount": float(payment_data["amount"]),
+                "amount": amount,
                 "payment_method": payment_data["payment_method"],
                 "status": "pending",
                 "transaction_id": str(ObjectId()),
@@ -62,9 +63,6 @@ class PaymentsService:
 
         except PyMongoError as e:
             raise RuntimeError(f"Database error during create_payment: {str(e)}")
-
-        except Exception as e:
-            raise RuntimeError(f"Unexpected error: {str(e)}")
 
     # ---------------------------------------------------------
     # 🔍 Verify Payment
@@ -129,12 +127,13 @@ class PaymentsService:
             raise RuntimeError(f"Database error during update_payment_status: {str(e)}")
 
     # ---------------------------------------------------------
-    # 🔍 Search
+    # 🔍 Search / Listing
     # ---------------------------------------------------------
     def list_payments_by_client(self, client_id: str) -> List[dict]:
         try:
             cursor = self.collection.find({"client_id": self._safe_oid(client_id)})
             return [self._sanitize(p) for p in cursor]
+
         except PyMongoError as e:
             raise RuntimeError(f"Database error during list_payments_by_client: {str(e)}")
 
@@ -142,6 +141,7 @@ class PaymentsService:
         try:
             cursor = self.collection.find({"order_id": self._safe_oid(order_id)})
             return [self._sanitize(p) for p in cursor]
+
         except PyMongoError as e:
             raise RuntimeError(f"Database error during list_payments_by_order: {str(e)}")
 
@@ -152,6 +152,7 @@ class PaymentsService:
         try:
             cursor = self.collection.find({"status": status})
             return [self._sanitize(p) for p in cursor]
+
         except PyMongoError as e:
             raise RuntimeError(f"Database error during list_payments_by_status: {str(e)}")
 
