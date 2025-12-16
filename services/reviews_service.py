@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from pymongo.errors import PyMongoError
 
 
-class ReviewsServiceRPC:
+class ReviewsService:
     def __init__(self, db):
         self.collection = db["reviews"]
 
