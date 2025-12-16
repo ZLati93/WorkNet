@@ -1,5 +1,5 @@
 from datetime import datetime
-from bson import ObjectId, InvalidId
+from bson.objectid import ObjectId, InvalidId
 from pymongo.errors import PyMongoError
 
 
