@@ -31,19 +31,21 @@ except Exception as e:
 # ---------------------------------------------------------
 print("\n=== TEST GIGS ===")
 gig_data = {
-    "freelancer_id": TEST_FREELANCER_ID,
     "category_id": TEST_CATEGORY_ID,
     "title": "Gig Test RPC",
     "description": "Description test RPC",
     "price": 50
 }
-res = rpc.gigs.create_gig(gig_data)
+# ⚠ create_gig prend 2 arguments : freelancer_id et data
+res = rpc.gigs.create_gig(TEST_FREELANCER_ID, gig_data)
 pprint(res)
 GIG_ID = res.get("gig_id")
 
+# Get Gig
 res = rpc.gigs.get_gig_by_id(GIG_ID)
 pprint(res)
 
+# Update Gig
 update_data = {"price": 75, "title": "Gig Modifié RPC"}
 res = rpc.gigs.update_gig(GIG_ID, TEST_FREELANCER_ID, update_data)
 pprint(res)
@@ -71,7 +73,7 @@ pprint(res)
 # ---------------------------------------------------------
 print("\n=== TEST CATEGORIES ===")
 cat_data = {"name": "Catégorie Test RPC", "description": "Desc test"}
-res = rpc.categories.create_category(**cat_data)
+res = rpc.categories.create_category(cat_data)
 pprint(res)
 CAT_ID = res.get("category_id")
 
@@ -181,5 +183,4 @@ COMPLAINT_ID = res.get("complaint_id")
 res = rpc.complaints.get_complaint(COMPLAINT_ID)
 pprint(res)
 
-# ---------------------------------------------------------
 print("\n[INFO] Tous les tests RPC sont terminés.")
