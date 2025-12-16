@@ -1,31 +1,27 @@
 from bson.objectid import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
 from pymongo.errors import PyMongoError
 from typing import Optional, List, Dict
 
 
-class PaymentsService:
+class PaymentsServiceRPC:
     def __init__(self, db, platform_fee_rate: float = 0.1):
         self.collection = db["payments"]
+        self.withdrawals = db["withdrawals"]
         self.platform_fee_rate = platform_fee_rate
 
     # ---------------------------------------------------------
-    # 🔧 Utility : Safe ObjectId
+    # 🔧 Utility
     # ---------------------------------------------------------
     def _safe_oid(self, oid: str):
-        """Convert string → ObjectId with error handling."""
         try:
             return ObjectId(oid)
         except Exception:
             raise ValueError(f"Invalid ObjectId: {oid}")
 
-    # ---------------------------------------------------------
-    # 🔧 Utility : Sanitize MongoDB document
-    # ---------------------------------------------------------
     def _sanitize(self, payment: dict) -> dict:
         if not payment:
             return None
-
         sanitized = payment.copy()
         sanitized["_id"] = str(payment["_id"])
         sanitized["order_id"] = str(payment["order_id"])
@@ -33,138 +29,159 @@ class PaymentsService:
         return sanitized
 
     # ---------------------------------------------------------
-    # 💳 Create Payment
+    # 💳 CREATE / PROCESS PAYMENT
     # ---------------------------------------------------------
-    def create_payment(self, payment_data: dict) -> str:
-        required = ["order_id", "client_id", "amount", "payment_method"]
-
-        for r in required:
-            if r not in payment_data or not payment_data[r]:
-                raise ValueError(f"Missing or empty required field: {r}")
-
+    def create_payment_intent(self, order_id: str, client_id: str, method: str) -> dict:
         try:
-            amount = float(payment_data["amount"])
-            if amount <= 0:
-                raise ValueError("Amount must be a positive number")
-
-            payment = {
-                "order_id": self._safe_oid(payment_data["order_id"]),
-                "client_id": self._safe_oid(payment_data["client_id"]),
-                "amount": amount,
-                "payment_method": payment_data["payment_method"],
-                "status": "pending",
-                "transaction_id": str(ObjectId()),
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
+            payment_data = {
+                "order_id": order_id,
+                "client_id": client_id,
+                "amount": 0,  # amount will be set during process_payment
+                "payment_method": method
             }
+            payment_id = self.create_payment(payment_data)
+            return {"payment_id": payment_id}
+        except Exception as e:
+            return {"error": str(e)}
 
-            res = self.collection.insert_one(payment)
-            return str(res.inserted_id)
-
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during create_payment: {str(e)}")
-
-    # ---------------------------------------------------------
-    # 🔍 Verify Payment
-    # ---------------------------------------------------------
-    def verify_payment(self, transaction_id: str) -> Optional[dict]:
-        if not transaction_id:
-            raise ValueError("transaction_id is required")
-
+    def process_payment(self, order_id: str, client_id: str, data: dict) -> dict:
         try:
-            payment = self.collection.find_one({"transaction_id": transaction_id})
-            return self._sanitize(payment) if payment else None
-
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during verify_payment: {str(e)}")
+            payment_data = {
+                "order_id": order_id,
+                "client_id": client_id,
+                "amount": data.get("amount"),
+                "payment_method": data.get("payment_method")
+            }
+            payment_id = self.create_payment(payment_data)
+            self.complete_payment(payment_id)
+            return {"payment_id": payment_id, "status": "completed"}
+        except Exception as e:
+            return {"error": str(e)}
 
     # ---------------------------------------------------------
-    # ✔ Complete Payment
+    # 🔍 GET / LIST
     # ---------------------------------------------------------
-    def complete_payment(self, payment_id: str) -> bool:
+    def list_payments(self, user_id: str) -> list:
         try:
-            oid = self._safe_oid(payment_id)
-            res = self.collection.update_one(
-                {"_id": oid},
-                {"$set": {"status": "completed", "updated_at": datetime.utcnow()}}
-            )
-            return res.modified_count > 0
+            return self.list_payments_by_client(user_id)
+        except Exception as e:
+            return [{"error": str(e)}]
 
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during complete_payment: {str(e)}")
-
-    # ---------------------------------------------------------
-    # ↩ Refund Payment
-    # ---------------------------------------------------------
-    def refund_payment(self, payment_id: str) -> bool:
+    def get_payment(self, payment_id: str, user_id: str) -> dict:
         try:
-            oid = self._safe_oid(payment_id)
-            res = self.collection.update_one(
-                {"_id": oid},
-                {"$set": {"status": "refunded", "updated_at": datetime.utcnow()}}
-            )
-            return res.modified_count > 0
-
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during refund_payment: {str(e)}")
+            payment = self.verify_payment(payment_id)
+            if payment and payment["client_id"] == user_id:
+                return payment
+            return {"error": "Payment not found or access denied"}
+        except Exception as e:
+            return {"error": str(e)}
 
     # ---------------------------------------------------------
-    # 🔄 Update Payment Status
+    # ↩ REFUNDS
     # ---------------------------------------------------------
-    def update_payment_status(self, payment_id: str, status: str) -> bool:
-        if not status:
-            raise ValueError("Status cannot be empty")
-
+    def request_refund(self, order_id: str, client_id: str, reason: str) -> dict:
         try:
-            oid = self._safe_oid(payment_id)
-            res = self.collection.update_one(
-                {"_id": oid},
-                {"$set": {"status": status, "updated_at": datetime.utcnow()}}
-            )
-            return res.modified_count > 0
-
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during update_payment_status: {str(e)}")
+            payments = self.list_payments_by_order(order_id)
+            payment = next((p for p in payments if p["client_id"] == client_id), None)
+            if not payment:
+                return {"error": "Payment not found"}
+            self.refund_payment(payment["_id"])
+            return {"success": True, "reason": reason}
+        except Exception as e:
+            return {"error": str(e)}
 
     # ---------------------------------------------------------
-    # 🔍 Search / Listing
+    # 📈 FREELANCER EARNINGS
     # ---------------------------------------------------------
-    def list_payments_by_client(self, client_id: str) -> List[dict]:
+    def get_earnings(self, freelancer_id: str, filters: dict = None) -> dict:
         try:
-            cursor = self.collection.find({"client_id": self._safe_oid(client_id)})
+            oid = self._safe_oid(freelancer_id)
+            query = {"freelancer_id": oid, "status": "completed"}
+            if filters:
+                if "start_date" in filters:
+                    query["created_at"] = {"$gte": filters["start_date"]}
+                if "end_date" in filters:
+                    query.setdefault("created_at", {})["$lte"] = filters["end_date"]
+
+            payments = list(self.collection.find(query))
+            total_earnings = sum(p["amount"] for p in payments)
+            freelancer_earnings = sum(self.calculate_freelancer_earnings(p["amount"]) for p in payments)
+
+            return {"total_earnings": total_earnings, "freelancer_earnings": freelancer_earnings}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def request_withdrawal(self, freelancer_id: str, data: dict) -> dict:
+        try:
+            withdrawal = {
+                "freelancer_id": self._safe_oid(freelancer_id),
+                "amount": data.get("amount"),
+                "status": "pending",
+                "requested_at": datetime.utcnow(),
+                "method": data.get("method", "bank_transfer"),
+            }
+            res = self.withdrawals.insert_one(withdrawal)
+            return {"withdrawal_id": str(res.inserted_id)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def list_withdrawals(self, freelancer_id: str) -> list:
+        try:
+            oid = self._safe_oid(freelancer_id)
+            cursor = self.withdrawals.find({"freelancer_id": oid})
+            return [self._sanitize(w) for w in cursor]
+        except Exception as e:
+            return [{"error": str(e)}]
+
+    def get_revenue_analytics(self, freelancer_id: str, period: str) -> dict:
+        try:
+            oid = self._safe_oid(freelancer_id)
+            now = datetime.utcnow()
+            start_date = now - timedelta(days=30) if period == "month" else now - timedelta(days=7)
+            payments = list(self.collection.find({
+                "freelancer_id": oid,
+                "status": "completed",
+                "created_at": {"$gte": start_date}
+            }))
+            total = sum(p["amount"] for p in payments)
+            return {"period": period, "total_revenue": total, "count": len(payments)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    # ---------------------------------------------------------
+    # Admin
+    # ---------------------------------------------------------
+    def list_all_payments(self, filters: dict = None, pagination: dict = None) -> list:
+        try:
+            cursor = self.collection.find(filters or {})
             return [self._sanitize(p) for p in cursor]
+        except Exception as e:
+            return [{"error": str(e)}]
 
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during list_payments_by_client: {str(e)}")
-
-    def list_payments_by_order(self, order_id: str) -> List[dict]:
+    def process_withdrawal(self, withdrawal_id: str, status: str) -> dict:
         try:
-            cursor = self.collection.find({"order_id": self._safe_oid(order_id)})
-            return [self._sanitize(p) for p in cursor]
+            oid = self._safe_oid(withdrawal_id)
+            res = self.withdrawals.update_one(
+                {"_id": oid}, {"$set": {"status": status, "processed_at": datetime.utcnow()}}
+            )
+            return {"success": res.modified_count > 0}
+        except Exception as e:
+            return {"error": str(e)}
 
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during list_payments_by_order: {str(e)}")
-
-    def list_payments_by_status(self, status: str) -> List[dict]:
-        if not status:
-            raise ValueError("Status is required")
-
+    def update_payment_status(self, payment_id: str, status: str) -> dict:
         try:
-            cursor = self.collection.find({"status": status})
-            return [self._sanitize(p) for p in cursor]
+            success = self.complete_payment(payment_id) if status == "completed" else self.refund_payment(payment_id)
+            return {"success": success}
+        except Exception as e:
+            return {"error": str(e)}
 
-        except PyMongoError as e:
-            raise RuntimeError(f"Database error during list_payments_by_status: {str(e)}")
-
-    # ---------------------------------------------------------
-    # 📊 Stats
-    # ---------------------------------------------------------
-    def calculate_platform_fee(self, amount: float) -> float:
-        if amount < 0:
-            raise ValueError("Amount must be >= 0")
-        return round(amount * self.platform_fee_rate, 2)
-
-    def calculate_freelancer_earnings(self, amount: float) -> float:
-        if amount < 0:
-            raise ValueError("Amount must be >= 0")
-        return round(amount * (1 - self.platform_fee_rate), 2)
+    def get_platform_earnings(self, period: str) -> dict:
+        try:
+            now = datetime.utcnow()
+            start_date = now - timedelta(days=30) if period == "month" else now - timedelta(days=7)
+            payments = list(self.collection.find({"status": "completed", "created_at": {"$gte": start_date}}))
+            total = sum(p["amount"] for p in payments)
+            platform_total = sum(self.calculate_platform_fee(p["amount"]) for p in payments)
+            return {"period": period, "total_payments": total, "platform_earnings": platform_total}
+        except Exception as e:
+            return {"error": str(e)}
