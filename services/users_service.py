@@ -36,7 +36,9 @@ class UsersServiceRPC:
                 user[k] = user[k].isoformat()
         return user
 
-    # ========================= AUTH =========================
+    # ===========================================================
+    # AUTH – CORE IMPLEMENTATION
+    # ===========================================================
     def register_user(self, email: str, password: str, full_name: str) -> dict:
         try:
             email = email.lower().strip()
@@ -88,6 +90,7 @@ class UsersServiceRPC:
                 "role": user["role"],
                 "exp": datetime.utcnow() + timedelta(days=7),
             }
+
             token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
             return {"token": token, "user": self._sanitize(user)}
 
@@ -122,7 +125,9 @@ class UsersServiceRPC:
         except Exception:
             return {"error": "Invalid or expired token"}
 
-    # ========================= USER MANAGEMENT =========================
+    # ===========================================================
+    # USER MANAGEMENT
+    # ===========================================================
     def get_user_profile(self, user_id: str) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
@@ -130,31 +135,29 @@ class UsersServiceRPC:
         except Exception as e:
             return {"error": str(e)}
 
-    def update_user_profile(self, user_id: str, update_data: dict) -> dict:
+    def update_user_profile(self, user_id: str, data: dict) -> dict:
         try:
-            update_data["updated_at"] = datetime.utcnow()
+            data["updated_at"] = datetime.utcnow()
             oid = self._to_objectid(user_id, "user_id")
-            res = self.collection.update_one(
-                {"_id": oid}, {"$set": update_data}
-            )
+            res = self.collection.update_one({"_id": oid}, {"$set": data})
             return {"success": res.modified_count > 0}
         except Exception as e:
             return {"error": str(e)}
 
-    def update_user_avatar(self, user_id: str, avatar_url: str) -> dict:
-        return self.update_user_profile(user_id, {"avatar_url": avatar_url})
+    def update_user_avatar(self, user_id: str, image_url: str) -> dict:
+        return self.update_user_profile(user_id, {"avatar_url": image_url})
 
-    def change_password(self, user_id: str, old_password: str, new_password: str) -> dict:
+    def change_password(self, user_id: str, old: str, new: str) -> dict:
         try:
             oid = self._to_objectid(user_id, "user_id")
             user = self.collection.find_one({"_id": oid})
 
-            if not verify_password(old_password, user["password_hash"]):
+            if not verify_password(old, user["password_hash"]):
                 return {"error": "Old password incorrect"}
 
             self.collection.update_one(
                 {"_id": oid},
-                {"$set": {"password_hash": hash_password(new_password)}},
+                {"$set": {"password_hash": hash_password(new)}},
             )
             return {"success": True}
         except Exception as e:
@@ -171,12 +174,14 @@ class UsersServiceRPC:
         except Exception as e:
             return {"error": str(e)}
 
-    # ========================= FREELANCER =========================
-    def update_freelancer_skills(self, user_id: str, skills: List[str]) -> dict:
+    # ===========================================================
+    # FREELANCER
+    # ===========================================================
+    def update_freelancer_skills(self, user_id: str, skills: list) -> dict:
         return self.update_user_profile(user_id, {"skills": skills})
 
-    def update_freelancer_portfolio(self, user_id: str, portfolio_items: list) -> dict:
-        return self.update_user_profile(user_id, {"portfolio": portfolio_items})
+    def update_freelancer_portfolio(self, user_id: str, portfolio: list) -> dict:
+        return self.update_user_profile(user_id, {"portfolio": portfolio})
 
     def get_freelancer_public_profile(self, username: str) -> dict:
         user = self.collection.find_one(
@@ -186,19 +191,28 @@ class UsersServiceRPC:
 
     def search_freelancers(self, filters: dict) -> list:
         query = {"role": "freelancer", "is_active": True}
-        if "skills" in filters:
+
+        if filters.get("skills"):
             query["skills"] = {"$in": filters["skills"]}
-        if "min_rate" in filters:
+
+        if filters.get("min_rate"):
             query["hourly_rate"] = {"$gte": filters["min_rate"]}
+
         return [self._sanitize(u) for u in self.collection.find(query)]
 
-    # ========================= CLIENT =========================
-    def update_client_company(self, user_id: str, company_data: dict) -> dict:
-        return self.update_user_profile(user_id, {"company": company_data})
+    # ===========================================================
+    # CLIENT
+    # ===========================================================
+    def update_client_company(self, user_id: str, data: dict) -> dict:
+        return self.update_user_profile(user_id, {"company": data})
 
-    # ========================= ADMIN =========================
-    def get_all_users(self, filters: dict = None, pagination: dict = None) -> list:
-        return [self._sanitize(u) for u in self.collection.find(filters or {})]
+    # ===========================================================
+    # ADMIN
+    # ===========================================================
+    def list_users(self, filters: dict = None, pagination: dict = None) -> list:
+        filters = filters or {}
+        cursor = self.collection.find(filters)
+        return [self._sanitize(u) for u in cursor]
 
     def get_user_by_id(self, user_id: str) -> dict:
         return self.get_user_profile(user_id)
@@ -206,5 +220,5 @@ class UsersServiceRPC:
     def update_user_status(self, user_id: str, status: bool) -> dict:
         return self.update_user_profile(user_id, {"is_active": status})
 
-    def delete_user(self, user_id: str) -> dict:
+    def delete_user_admin(self, user_id: str) -> dict:
         return self.delete_account(user_id)
