@@ -4,7 +4,7 @@ from pymongo.errors import PyMongoError
 from typing import Optional, List, Dict
 
 
-class PaymentsServiceRPC:
+class PaymentsService:
     def __init__(self, db, platform_fee_rate: float = 0.1):
         self.collection = db["payments"]
         self.withdrawals = db["withdrawals"]
