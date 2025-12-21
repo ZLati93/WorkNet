@@ -1,0 +1,9 @@
+[{
+  "_id": "6731bda9c5a8f12345abcd67",
+  "orderId": "672fae223bd79f1234567890",
+  "senderId": "672fadc23bd79f1234567889",
+  "receiverId": "672fadf33bd79f123456788a",
+  "content": "Bonjour, je vais commencer le projet demain.",
+  "timestamp": "2025-11-11T14:30:00Z",
+  "status": "sent"
+}]

@@ -1,0 +1,56 @@
+[{
+  "_id": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "utilisateurId": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "competences": [
+    "Développement Web",
+    "React",
+    "Node.js",
+    "MongoDB"
+  ],
+  "description": "Développeur fullstack expérimenté",
+  "specialite": "Applications web",
+  "noteMoyenne": 5,
+  "gigsCrees": [
+    {
+      "$oid": "707f1f77bcf86cd799439031"
+    },
+    {
+      "$oid": "707f1f77bcf86cd799439032"
+    },
+    {
+      "$oid": "6911d0a5858b1055889dc97c"
+    }
+  ],
+  "dateCreation": {
+    "$date": "2024-01-15T10:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "607f1f77bcf86cd799439022"
+  },
+  "utilisateurId": {
+    "$oid": "507f1f77bcf86cd799439013"
+  },
+  "competences": [
+    "Design Graphique",
+    "UI/UX",
+    "Photoshop",
+    "Figma"
+  ],
+  "description": "Designer créatif spécialisé en UI/UX",
+  "specialite": "Design d'interface",
+  "noteMoyenne": 4.9,
+  "gigsCrees": [
+    {
+      "$oid": "707f1f77bcf86cd799439033"
+    }
+  ],
+  "dateCreation": {
+    "$date": "2024-03-10T09:15:00.000Z"
+  }
+}]

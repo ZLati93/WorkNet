@@ -1,0 +1,10 @@
+[{
+  "_id": {
+    "$oid": "672c9be69d1b1f3b5a9f0005"
+  },
+  "commandeId": "672c9bd49d1b1f3b5a9f0004",
+  "montant": 150,
+  "datePaiement": "2025-11-10T10:00:00Z",
+  "mode": "Carte",
+  "statut": "effectué"
+}]

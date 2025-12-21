@@ -1,0 +1,45 @@
+[{
+  "_id": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "nom": "Alice Martin",
+  "email": "alice.martin@email.com",
+  "motDePasse": "$2b$10$hashed_password_1",
+  "role": "freelance",
+  "dateInscription": {
+    "$date": "2024-01-15T10:00:00.000Z"
+  },
+  "derniereConnexion": {
+    "$date": "2024-11-09T18:30:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "507f1f77bcf86cd799439012"
+  },
+  "nom": "Bob Dupont",
+  "email": "bob.dupont@email.com",
+  "motDePasse": "$2b$10$hashed_password_2",
+  "role": "client",
+  "dateInscription": {
+    "$date": "2024-02-20T14:30:00.000Z"
+  },
+  "derniereConnexion": {
+    "$date": "2024-11-09T19:15:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "507f1f77bcf86cd799439013"
+  },
+  "nom": "Charlie Leroy",
+  "email": "charlie.leroy@email.com",
+  "motDePasse": "$2b$10$hashed_password_3",
+  "role": "freelance",
+  "dateInscription": {
+    "$date": "2024-03-10T09:15:00.000Z"
+  },
+  "derniereConnexion": {
+    "$date": "2024-11-09T20:00:00.000Z"
+  }
+}]

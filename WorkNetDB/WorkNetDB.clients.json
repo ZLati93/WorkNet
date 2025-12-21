@@ -1,0 +1,51 @@
+[{
+  "_id": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "utilisateurId": {
+    "$oid": "507f1f77bcf86cd799439012"
+  },
+  "commandes": [
+    {
+      "$oid": "907f1f77bcf86cd799439051"
+    },
+    {
+      "$oid": "907f1f77bcf86cd799439052"
+    },
+    {
+      "$oid": "69114cc2103958a426c91ae6"
+    },
+    {
+      "$oid": "69114cfa103958a426c91ae7"
+    },
+    {
+      "$oid": "69114d1d103958a426c91ae8"
+    }
+  ],
+  "adresseFacturation": {
+    "rue": "123 Avenue des Champs",
+    "ville": "Paris",
+    "codePostal": "75008",
+    "pays": "France"
+  },
+  "historiqueAchats": [
+    {
+      "gigId": {
+        "$oid": "707f1f77bcf86cd799439031"
+      },
+      "dateAchat": {
+        "$date": "2024-09-10T16:20:00.000Z"
+      },
+      "montant": 500
+    },
+    {
+      "gigId": {
+        "$oid": "707f1f77bcf86cd799439032"
+      },
+      "dateAchat": {
+        "$date": "2025-11-10T02:24:58.758Z"
+      },
+      "montant": 300
+    }
+  ]
+}]

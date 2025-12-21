@@ -1,0 +1,122 @@
+[{
+  "_id": {
+    "$oid": "707f1f77bcf86cd799439031"
+  },
+  "titre": "Développement d'application React",
+  "description": "Je développe votre application React avec Node.js et MongoDB",
+  "prix": 500,
+  "statut": "actif",
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "competencesRequises": [
+    "React",
+    "JavaScript",
+    "API"
+  ],
+  "delaiLivraison": 14,
+  "images": [
+    "react-app.jpg",
+    "portfolio.jpg"
+  ],
+  "categorie": "Développement Web",
+  "dateCreation": {
+    "$date": "2024-06-01T08:00:00.000Z"
+  },
+  "dateModification": {
+    "$date": "2024-11-01T10:30:00.000Z"
+  },
+  "commandesAcceptees": 12,
+  "noteMoyenne": 5
+},
+{
+  "_id": {
+    "$oid": "707f1f77bcf86cd799439032"
+  },
+  "titre": "API REST avec Node.js",
+  "description": "Création d'API REST sécurisée avec authentification JWT",
+  "prix": 300,
+  "statut": "actif",
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "competencesRequises": [
+    "Node.js",
+    "Express",
+    "MongoDB",
+    "JWT"
+  ],
+  "delaiLivraison": 10,
+  "images": [
+    "api-design.jpg"
+  ],
+  "categorie": "Backend Development",
+  "dateCreation": {
+    "$date": "2024-07-15T14:20:00.000Z"
+  },
+  "dateModification": {
+    "$date": "2024-10-20T16:45:00.000Z"
+  },
+  "commandesAcceptees": 8,
+  "noteMoyenne": 4.9
+},
+{
+  "_id": {
+    "$oid": "707f1f77bcf86cd799439033"
+  },
+  "titre": "Design d'interface utilisateur moderne",
+  "description": "Je crée des designs UI/UX modernes et responsives pour votre application",
+  "prix": 250,
+  "statut": "actif",
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439022"
+  },
+  "competencesRequises": [
+    "UI Design",
+    "UX Research",
+    "Figma",
+    "Adobe XD"
+  ],
+  "delaiLivraison": 7,
+  "images": [
+    "ui-design.jpg",
+    "portfolio-ui.jpg"
+  ],
+  "categorie": "Design",
+  "dateCreation": {
+    "$date": "2024-08-20T11:15:00.000Z"
+  },
+  "dateModification": {
+    "$date": "2024-11-05T09:30:00.000Z"
+  },
+  "commandesAcceptees": 15,
+  "noteMoyenne": 4.8
+},
+{
+  "_id": {
+    "$oid": "6911d0a5858b1055889dc97c"
+  },
+  "titre": "Application Mobile Flutter",
+  "description": "Développement d'applications mobiles cross-platform avec Flutter",
+  "prix": 800,
+  "statut": "actif",
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "competencesRequises": [
+    "Flutter",
+    "Dart",
+    "Firebase",
+    "API REST"
+  ],
+  "delaiLivraison": 21,
+  "categorie": "Développement Mobile",
+  "dateCreation": {
+    "$date": "2025-11-10T11:46:45.810Z"
+  },
+  "dateModification": {
+    "$date": "2025-11-10T11:46:45.810Z"
+  },
+  "commandesAcceptees": 0,
+  "noteMoyenne": 0
+}]

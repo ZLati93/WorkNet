@@ -1,0 +1,212 @@
+[{
+  "_id": {
+    "$oid": "907f1f77bcf86cd799439051"
+  },
+  "clientId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "gigId": {
+    "$oid": "707f1f77bcf86cd799439031"
+  },
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "dateCommande": {
+    "$date": "2024-09-10T16:20:00.000Z"
+  },
+  "statut": "payee",
+  "prix": 500,
+  "details": {
+    "specifications": "Application de gestion de tâches avec calendrier intégré",
+    "delaiSouhaite": {
+      "$date": "2024-09-24T16:20:00.000Z"
+    },
+    "instructionsSpeciales": "Interface sombre/clair optionnelle"
+  },
+  "paiement": {
+    "methode": "carte_credit",
+    "datePaiement": {
+      "$date": "2024-09-10T16:25:00.000Z"
+    },
+    "statutPaiement": "complet",
+    "transactionId": "txn_789012345"
+  },
+  "livraison": {
+    "dateLivraisonPrevue": {
+      "$date": "2024-09-24T16:20:00.000Z"
+    },
+    "dateLivraisonReelle": {
+      "$date": "2024-09-22T14:30:00.000Z"
+    },
+    "fichiers": [
+      "app-source-code.zip",
+      "documentation.pdf"
+    ]
+  },
+  "evaluation": {
+    "note": 5,
+    "commentaire": "Travail excellent, livraison rapide!",
+    "dateEvaluation": {
+      "$date": "2025-11-10T11:48:33.897Z"
+    }
+  }
+},
+{
+  "_id": {
+    "$oid": "907f1f77bcf86cd799439052"
+  },
+  "clientId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "gigId": {
+    "$oid": "707f1f77bcf86cd799439033"
+  },
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439022"
+  },
+  "dateCommande": {
+    "$date": "2024-11-08T11:30:00.000Z"
+  },
+  "statut": "en_attente",
+  "prix": 250,
+  "details": {
+    "specifications": "Design pour application mobile de fitness",
+    "delaiSouhaite": {
+      "$date": "2024-11-15T11:30:00.000Z"
+    },
+    "instructionsSpeciales": "Style moderne avec palette de couleurs sportives"
+  },
+  "paiement": {
+    "methode": "paypal",
+    "datePaiement": null,
+    "statutPaiement": "en_attente",
+    "transactionId": null
+  },
+  "livraison": {
+    "dateLivraisonPrevue": {
+      "$date": "2024-11-15T11:30:00.000Z"
+    },
+    "dateLivraisonReelle": null,
+    "fichiers": []
+  },
+  "evaluation": {
+    "note": null,
+    "commentaire": null,
+    "dateEvaluation": null
+  }
+},
+{
+  "_id": {
+    "$oid": "69114cc2103958a426c91ae6"
+  },
+  "clientId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "gigId": {
+    "$oid": "707f1f77bcf86cd799439032"
+  },
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "dateCommande": {
+    "$date": "2025-11-10T02:24:02.142Z"
+  },
+  "statut": "en_attente",
+  "prix": 300,
+  "details": {
+    "specifications": "API pour application mobile",
+    "delaiSouhaite": {
+      "$date": "2025-11-20T02:24:02.142Z"
+    },
+    "instructionsSpeciales": "Documentation détaillée requise"
+  },
+  "paiement": {
+    "methode": "paypal",
+    "datePaiement": null,
+    "statutPaiement": "en_attente",
+    "transactionId": null
+  }
+},
+{
+  "_id": {
+    "$oid": "69114cfa103958a426c91ae7"
+  },
+  "clientId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "gigId": {
+    "$oid": "707f1f77bcf86cd799439032"
+  },
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "dateCommande": {
+    "$date": "2025-11-10T02:24:58.750Z"
+  },
+  "statut": "en_attente",
+  "prix": 300,
+  "details": {
+    "specifications": "API pour application mobile",
+    "delaiSouhaite": {
+      "$date": "2025-11-20T02:24:58.750Z"
+    },
+    "instructionsSpeciales": "Documentation détaillée requise"
+  },
+  "paiement": {
+    "methode": "paypal",
+    "datePaiement": null,
+    "statutPaiement": "en_attente",
+    "transactionId": null
+  },
+  "livraison": {
+    "dateLivraisonPrevue": {
+      "$date": "2025-11-20T02:24:58.750Z"
+    },
+    "dateLivraisonReelle": null,
+    "fichiers": []
+  },
+  "evaluation": {
+    "note": null,
+    "commentaire": null,
+    "dateEvaluation": null
+  }
+},
+{
+  "_id": {
+    "$oid": "69114d1d103958a426c91ae8"
+  },
+  "clientId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "gigId": {
+    "$oid": "707f1f77bcf86cd799439032"
+  },
+  "freelanceId": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "dateCommande": {
+    "$date": "2025-11-10T02:25:33.635Z"
+  },
+  "statut": "en_attente",
+  "prix": 300,
+  "details": {
+    "specifications": "API pour application mobile",
+    "delaiSouhaite": {
+      "$date": "2025-11-20T02:25:33.635Z"
+    },
+    "instructionsSpeciales": "Documentation détaillée requise"
+  },
+  "paiement": {
+    "methode": "paypal",
+    "datePaiement": null,
+    "statutPaiement": "en_attente",
+    "transactionId": null
+  },
+  "livraison": {
+    "dateLivraisonPrevue": {
+      "$date": "2025-11-20T02:25:33.635Z"
+    },
+    "dateLivraisonReelle": null,
+    "fichiers": []
+  }
+}]
