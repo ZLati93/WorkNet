@@ -1,0 +1,8 @@
+pytest==7.4.3
+pytest-xdist==3.5.0
+pytest-html==4.1.1
+pytest-timeout==2.2.0
+xmlrpc==1.0.0
+pymongo==4.6.1
+python-dotenv==1.0.0
+

@@ -1,0 +1,31 @@
+{
+  "name": "worknet-database",
+  "version": "1.0.0",
+  "description": "WorkNet Database Setup and Management Scripts",
+  "main": "dbConfig.js",
+  "scripts": {
+    "setup": "node setupDatabase.js",
+    "seed": "node insertSampleData.js",
+    "init": "npm run setup && npm run seed",
+    "reset": "node resetDatabase.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mongodb",
+    "database",
+    "worknet",
+    "setup"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^6.3.0",
+    "mongoose": "^8.0.3",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+

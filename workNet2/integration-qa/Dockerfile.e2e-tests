@@ -1,0 +1,31 @@
+FROM node:18-alpine
+
+# Install Playwright dependencies
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Set Playwright to use system Chromium
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Install Playwright
+RUN npx playwright install chromium --with-deps || true
+
+# Copy test files
+COPY tests/e2e_tests.js /app/tests/
+
+# Run tests
+CMD ["npm", "test", "--", "tests/e2e_tests.js"]
+

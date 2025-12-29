@@ -1,0 +1,17 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy test files
+COPY tests/api_tests.js /app/tests/
+
+# Copy backend-node for RPC client access
+COPY ../backend-node/rpc-client /app/backend-node/rpc-client
+
+# Run tests
+CMD ["npm", "test", "--", "tests/api_tests.js"]
+

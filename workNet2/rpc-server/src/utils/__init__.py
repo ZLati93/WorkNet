@@ -1,0 +1,123 @@
+"""
+Utilities Module
+Contains utility functions for RPC server
+"""
+
+from .validators import (
+    validate_object_id,
+    validate_email,
+    validate_username,
+    validate_role,
+    validate_price,
+    validate_rating,
+    validate_status,
+    validate_date
+)
+
+from .security import (
+    hash_password,
+    verify_password,
+    validate_password_strength,
+    generate_token,
+    generate_refresh_token,
+    verify_token,
+    refresh_access_token,
+    check_permission,
+    require_role,
+    require_owner_or_role,
+    is_admin,
+    is_seller,
+    is_client,
+    create_token_payload,
+    extract_user_from_token,
+    sanitize_input,
+    generate_random_string,
+    mask_email,
+    SecurityError
+)
+
+from .database import (
+    get_database_connection,
+    execute_transaction,
+    with_transaction,
+    to_object_id,
+    to_object_id_list,
+    is_valid_object_id,
+    build_date_range_query,
+    build_text_search_query,
+    build_pagination_query,
+    build_lookup_pipeline,
+    build_match_pipeline,
+    build_group_pipeline,
+    build_sort_pipeline,
+    build_project_pipeline,
+    build_facet_pipeline,
+    aggregate_user_stats,
+    aggregate_gig_stats,
+    aggregate_category_stats,
+    safe_find_one,
+    safe_insert_one,
+    safe_update_one,
+    safe_delete_one,
+    get_current_timestamp,
+    add_timestamps,
+    DatabaseError
+)
+
+__all__ = [
+    # Validators
+    'validate_object_id',
+    'validate_email',
+    'validate_username',
+    'validate_role',
+    'validate_price',
+    'validate_rating',
+    'validate_status',
+    'validate_date',
+    # Security
+    'hash_password',
+    'verify_password',
+    'validate_password_strength',
+    'generate_token',
+    'generate_refresh_token',
+    'verify_token',
+    'refresh_access_token',
+    'check_permission',
+    'require_role',
+    'require_owner_or_role',
+    'is_admin',
+    'is_seller',
+    'is_client',
+    'create_token_payload',
+    'extract_user_from_token',
+    'sanitize_input',
+    'generate_random_string',
+    'mask_email',
+    'SecurityError',
+    # Database
+    'get_database_connection',
+    'execute_transaction',
+    'with_transaction',
+    'to_object_id',
+    'to_object_id_list',
+    'is_valid_object_id',
+    'build_date_range_query',
+    'build_text_search_query',
+    'build_pagination_query',
+    'build_lookup_pipeline',
+    'build_match_pipeline',
+    'build_group_pipeline',
+    'build_sort_pipeline',
+    'build_project_pipeline',
+    'build_facet_pipeline',
+    'aggregate_user_stats',
+    'aggregate_gig_stats',
+    'aggregate_category_stats',
+    'safe_find_one',
+    'safe_insert_one',
+    'safe_update_one',
+    'safe_delete_one',
+    'get_current_timestamp',
+    'add_timestamps',
+    'DatabaseError'
+]

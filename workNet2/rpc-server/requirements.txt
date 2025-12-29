@@ -1,0 +1,25 @@
+# XML-RPC Server
+xmlrpc==1.0.0
+
+# gRPC (optional, for future use)
+grpcio==1.60.0
+grpcio-tools==1.60.0
+protobuf==4.25.1
+
+# MongoDB
+pymongo==4.6.1
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Security
+bcrypt==4.1.2
+PyJWT==2.8.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+
+# Utilities
+python-dateutil==2.8.2

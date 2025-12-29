@@ -1,0 +1,30 @@
+{
+  "name": "worknet-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scripts racine pour orchestrer WorkNet (install, start, test, stop)",
+  "scripts": {
+    "setup": "bash ./setup.sh",
+    "start": "bash ./start.sh",
+    "start:docker": "docker compose up -d --build",
+    "start:local": "bash ./start.sh local",
+    "stop": "bash ./stop.sh",
+    "stop:local": "bash ./stop.sh local",
+    "test": "bash ./test.sh",
+    "test:all": "npm run test:backend && npm run test:client && npm run test:freelancer && npm run test:integration && npm run test:rpc",
+    "test:backend": "cd backend-node && npm test",
+    "test:client": "cd frontend-client && npm test",
+    "test:freelancer": "cd frontend-freelancer && npm test",
+    "test:integration": "cd integration-qa && npm run test:all",
+    "test:rpc": "cd rpc-server && npm test",
+    "lint": "(cd backend-node && npm run lint) && (cd frontend-client && npm run lint) && (cd frontend-freelancer && npm run lint)"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "kill-port": "^1.6.2"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}

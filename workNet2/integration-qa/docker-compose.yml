@@ -1,0 +1,189 @@
+version: '3.8'
+
+services:
+  # MongoDB Database for Testing
+  mongodb-test:
+    image: mongo:7.0
+    container_name: worknet-mongodb-test
+    ports:
+      - "27018:27017"  # Different port to avoid conflicts
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-worknet_test}
+    volumes:
+      - mongodb_test_data:/data/db
+      - mongodb_test_config:/data/configdb
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    command: mongod --noauth  # No auth for testing
+
+  # Node.js API Gateway for Testing
+  api-gateway-test:
+    build:
+      context: ../backend-node
+      dockerfile: Dockerfile
+    container_name: worknet-api-gateway-test
+    ports:
+      - "3002:3000"  # Different port
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb-test:27017/${MONGO_DATABASE:-worknet_test}?authSource=admin
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      JWT_SECRET: test-jwt-secret-key
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: "*"
+      RPC_HOST: rpc-server-test
+      RPC_PORT: 8000
+    depends_on:
+      mongodb-test:
+        condition: service_healthy
+      rpc-server-test:
+        condition: service_healthy
+    volumes:
+      - ../backend-node:/app
+      - /app/node_modules
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Python RPC Server for Testing
+  rpc-server-test:
+    build:
+      context: ../rpc-server
+      dockerfile: Dockerfile.python
+    container_name: worknet-rpc-server-test
+    ports:
+      - "8001:8000"  # Different port
+    environment:
+      PYTHONUNBUFFERED: 1
+      RPC_PORT: 8000
+      RPC_HOST: 0.0.0.0
+      MONGODB_URI: mongodb://mongodb-test:27017/${MONGO_DATABASE:-worknet_test}?authSource=admin
+      DB_NAME: ${MONGO_DATABASE:-worknet_test}
+      NODE_ENV: test
+      JWT_SECRET: test-jwt-secret-key
+    depends_on:
+      mongodb-test:
+        condition: service_healthy
+    volumes:
+      - ../rpc-server:/app
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s = socket.socket(); result = s.connect_ex(('localhost', 8000)); s.close(); exit(0 if result == 0 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Redis Cache for Testing
+  redis-test:
+    image: redis:7-alpine
+    container_name: worknet-redis-test
+    ports:
+      - "6380:6379"  # Different port
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # Test Runner - RPC Tests (Python)
+  rpc-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.rpc-tests
+    container_name: worknet-rpc-tests
+    depends_on:
+      rpc-server-test:
+        condition: service_healthy
+      mongodb-test:
+        condition: service_healthy
+    environment:
+      RPC_HOST: rpc-server-test
+      RPC_PORT: 8000
+      MONGODB_URI: mongodb://mongodb-test:27017/${MONGO_DATABASE:-worknet_test}
+    volumes:
+      - ./tests:/app/tests
+      - ./reports:/app/reports
+    networks:
+      - test-network
+    command: pytest tests/rpc_tests.py -v --junitxml=reports/rpc_tests.xml
+
+  # Test Runner - API Integration Tests (Node.js)
+  api-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.api-tests
+    container_name: worknet-api-tests
+    depends_on:
+      api-gateway-test:
+        condition: service_healthy
+      rpc-server-test:
+        condition: service_healthy
+      mongodb-test:
+        condition: service_healthy
+    environment:
+      API_URL: http://api-gateway-test:3000/api
+      RPC_HOST: rpc-server-test
+      RPC_PORT: 8000
+      NODE_ENV: test
+    volumes:
+      - ./tests:/app/tests
+      - ./reports:/app/reports
+    networks:
+      - test-network
+    command: npm test -- tests/api_tests.js
+
+  # Test Runner - E2E Tests (Node.js with Playwright)
+  e2e-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e-tests
+    container_name: worknet-e2e-tests
+    depends_on:
+      api-gateway-test:
+        condition: service_healthy
+      rpc-server-test:
+        condition: service_healthy
+      mongodb-test:
+        condition: service_healthy
+    environment:
+      API_URL: http://api-gateway-test:3000/api
+      CLIENT_URL: http://api-gateway-test:3000
+      FREELANCER_URL: http://api-gateway-test:3001
+      NODE_ENV: test
+    volumes:
+      - ./tests:/app/tests
+      - ./reports:/app/reports
+    networks:
+      - test-network
+    command: npm test -- tests/e2e_tests.js
+
+volumes:
+  mongodb_test_data:
+    driver: local
+  mongodb_test_config:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge
+
